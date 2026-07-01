@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Buono di Consegna — Ottantunocento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --navy:#152238;
+    --navy-2:#1e3350;
+    --teal:#0e6b64;
+    --teal-light:#e4f1ef;
+    --gold:#c69a3e;
+    --cream:#f6f3ec;
+    --ink:#1c2230;
+    --ink-soft:#5a6272;
+    --line:#dcd6c8;
+    --white:#ffffff;
+    --danger:#a63b3b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 0 60px;}
+
+  header.masthead{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 100%);
+    color:var(--white);
+    padding:28px 24px 26px;
+    position:relative;
+    overflow:hidden;
+  }
+  header.masthead::after{
+    content:"";
+    position:absolute;
+    right:-40px; top:-40px;
+    width:180px; height:180px;
+    border:1px solid rgba(198,154,62,.35);
+    border-radius:50%;
+  }
+  .brand-eyebrow{
+    font-size:11px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--gold);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  h1.doc-title{
+    font-family:'Fraunces',serif;
+    font-size:28px;
+    font-weight:600;
+    margin:0 0 4px;
+    letter-spacing:-.01em;
+  }
+  .brand-sub{
+    font-size:12.5px;
+    color:rgba(255,255,255,.72);
+    line-height:1.5;
+  }
+  .buono-id{
+    margin-top:14px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(198,154,62,.4);
+    padding:6px 12px;
+    border-radius:100px;
+    font-size:13px;
+    letter-spacing:.02em;
+  }
+  .buono-id-input{
+    background:transparent;
+    border:none;
+    border-bottom:1px solid rgba(198,154,62,.6);
+    color:var(--gold);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    width:110px;
+    padding:2px 2px;
+    margin:0;
+  }
+  .buono-id-input:focus{
+    outline:none;
+    border-bottom:1px solid var(--gold);
+    background:rgba(255,255,255,.06);
+  }
+
+  main{padding:22px 20px 0;}
+
+  section.card{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px;
+    margin-bottom:16px;
+  }
+  .section-label{
+    font-family:'Fraunces',serif;
+    font-size:13px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--teal);
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-label::before{
+    content:"";
+    width:14px;height:2px;
+    background:var(--gold);
+    display:inline-block;
+  }
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:520px){.grid2{grid-template-columns:1fr;}}
+
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+  }
+  input[type=text], input[type=date], textarea{
+    width:100%;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    padding:10px 11px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    background:var(--cream);
+    color:var(--ink);
+    margin-bottom:12px;
+  }
+  input:focus, textarea:focus{
+    outline:2px solid var(--teal);
+    outline-offset:1px;
+    background:var(--white);
+  }
+  textarea{resize:vertical;min-height:44px;}
+
+  table.items{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  table.items th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-soft);
+    padding:0 6px 8px;
+    font-weight:600;
+  }
+  table.items td{padding:4px 6px 4px 0;vertical-align:top;}
+  table.items input{margin-bottom:0;}
+  .col-desc{width:auto;}
+  .col-qty{width:64px;}
+  .col-rm{width:32px;}
+  .rm-btn{
+    background:none;border:none;color:var(--danger);
+    font-size:18px;cursor:pointer;line-height:1;padding:9px 4px;
+  }
+  .add-row{
+    background:none;
+    border:1px dashed var(--teal);
+    color:var(--teal);
+    font-size:13px;
+    font-weight:600;
+    padding:9px 14px;
+    border-radius:7px;
+    cursor:pointer;
+    width:100%;
+    margin-top:2px;
+  }
+  .add-row:hover{background:var(--teal-light);}
+
+  .sig-pad-wrap{
+    border:1.5px dashed var(--line);
+    border-radius:8px;
+    background:var(--cream);
+    position:relative;
+    touch-action:none;
+  }
+  canvas#sigCanvas{
+    display:block;
+    width:100%;
+    height:150px;
+    border-radius:8px;
+    background:var(--white);
+  }
+  .sig-hint{
+    position:absolute;
+    bottom:8px;left:0;right:0;
+    text-align:center;
+    font-size:11px;
+    color:#b8b2a0;
+    pointer-events:none;
+  }
+  .sig-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:8px;
+  }
+  .clear-sig{
+    background:none;border:none;
+    color:var(--ink-soft);
+    font-size:12.5px;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:4px 0;
+  }
+  .sig-caption{font-size:11px;color:var(--ink-soft);}
+
+  .actions{
+    display:flex;
+    gap:10px;
+    padding:6px 20px 8px;
+    flex-wrap:wrap;
+  }
+  button.primary{
+    flex:1;
+    min-width:180px;
+    background:var(--teal);
+    color:var(--white);
+    border:none;
+    padding:14px 18px;
+    border-radius:8px;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    letter-spacing:.01em;
+  }
+  button.primary:active{background:#0b544f;}
+  button.secondary{
+    background:var(--white);
+    color:var(--navy);
+    border:1px solid var(--line);
+    padding:14px 18px;
+    border-radius:8px;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .status-msg{
+    padding:0 20px;
+    font-size:13px;
+    min-height:20px;
+    margin-top:6px;
+  }
+  .status-msg.ok{color:var(--teal);}
+  .status-msg.err{color:var(--danger);}
+
+  .history-toggle{
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+    padding:14px 20px;
+    font-family:'Fraunces',serif;
+    font-size:14px;
+    font-weight:600;
+    color:var(--navy);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-top:1px solid var(--line);
+    margin-top:8px;
+  }
+  #historyList{padding:0 20px 20px;display:none;}
+  .hist-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+    font-size:13.5px;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .hist-item .hi-main b{display:block;color:var(--navy);font-size:14px;}
+  .hist-item .hi-main span{color:var(--ink-soft);font-size:12px;}
+  .hi-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .hist-dl, .hist-edit, .hist-return, .hist-del{
+    background:none;border:1px solid var(--teal);color:var(--teal);
+    border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;
+    white-space:nowrap;
+  }
+  .hist-return{border-color:var(--gold);color:#8a6a1f;}
+  .hist-del{border-color:var(--danger);color:var(--danger);}
+  .empty-hist{color:var(--ink-soft);font-size:13px;padding:8px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="brand-eyebrow">Ottantunocento S.n.c.</div>
+    <h1 class="doc-title">Buono di Consegna Attrezzature</h1>
+    <div class="brand-sub">Via Vincenzo Gemito 81, 81100 Caserta — P.IVA 02187720616<br>ottantunocentogroup@gmail.com</div>
+    <div class="buono-id">
+      <span>N. buono</span>
+      <input type="text" id="buonoNumInput" class="buono-id-input" value="—">
+    </div>
+  </header>
+
+  <main>
+
+    <section class="card">
+      <p class="section-label">Dati consegna</p>
+      <div class="grid2">
+        <div>
+          <label for="dataConsegna">Data</label>
+          <input type="date" id="dataConsegna">
+        </div>
+        <div>
+          <label for="luogo">Luogo / evento</label>
+          <input type="text" id="luogo" placeholder="es. Piazza Carità, Marcianise in Jazz">
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label for="cliente">Cliente / ragione sociale</label>
+          <input type="text" id="cliente" placeholder="Nome cliente o azienda">
+        </div>
+        <div>
+          <label for="ritiratoDa">Ritirato da (persona)</label>
+          <input type="text" id="ritiratoDa" placeholder="Nome e cognome">
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label for="consegnatoDa">Consegnato da (operatore)</label>
+          <input type="text" id="consegnatoDa" placeholder="Nome operatore Ottantunocento">
+        </div>
+        <div>
+          <label for="luogoImpiego">Luogo di impiego attrezzatura</label>
+          <input type="text" id="luogoImpiego" placeholder="es. Sala Romanelli, Reggia di Caserta">
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label for="dataRientro">Data prevista rientro</label>
+          <input type="date" id="dataRientro">
+        </div>
+        <div>
+          <label for="dataRiconsegna">Data riconsegna effettiva</label>
+          <input type="date" id="dataRiconsegna">
+        </div>
+      </div>
+
+      <!-- COLLEGAMENTO CANTIERE PLANNING -->
+      <div style="margin-top:14px;padding:12px;background:#f0f7f6;border:1px solid #c6e2df;border-radius:8px">
+        <label style="font-weight:700;color:#0e6b64;font-size:13px;display:block;margin-bottom:8px">🏗️ Cantiere Planning</label>
+        <div class="grid2">
+          <div>
+            <label for="cantiereSelect" style="font-size:12px">Collega a cantiere esistente</label>
+            <select id="cantiereSelect" style="width:100%;padding:8px;border:1px solid #c6e2df;border-radius:6px;font-size:13px;background:#fff">
+              <option value="">⏳ Caricamento cantieri...</option>
+            </select>
+          </div>
+          <div>
+            <label for="cantiereName" style="font-size:12px">Oppure nome nuovo cantiere</label>
+            <input type="text" id="cantiereName" placeholder="Lascia vuoto se selezioni da lista" style="font-size:13px">
+          </div>
+        </div>
+        <div style="font-size:11px;color:#5a6272;margin-top:6px">
+          Se il cantiere non esiste nel Planning, verrà creato automaticamente al salvataggio del buono.
+        </div>
+        <input type="hidden" id="cantiereId">
+      </div>
+    </section>
+
+    <section class="card">
+      <p class="section-label">Attrezzatura consegnata</p>
+      <table class="items">
+        <thead>
+          <tr>
+            <th class="col-desc">Descrizione</th>
+            <th class="col-qty">Q.tà</th>
+            <th class="col-rm"></th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody"></tbody>
+      </table>
+      <button class="add-row" id="addRowBtn" type="button">+ Aggiungi riga</button>
+    </section>
+
+    <section class="card">
+      <p class="section-label">Note</p>
+      <textarea id="note" placeholder="Condizioni attrezzatura, accessori, eventuali danni pregressi..."></textarea>
+    </section>
+
+    <section class="card">
+      <p class="section-label">Firma cliente per ricevuta</p>
+      <div class="sig-pad-wrap">
+        <canvas id="sigCanvas"></canvas>
+        <div class="sig-hint" id="sigHint">Firma qui col dito</div>
+      </div>
+      <div class="sig-row">
+        <span class="sig-caption">Firmando confermo di aver ricevuto l'attrezzatura sopra elencata in buono stato.</span>
+        <button class="clear-sig" id="clearSigBtn" type="button">Cancella</button>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="actions">
+    <button class="secondary" id="resetBtn" type="button">Nuovo buono</button>
+    <button class="primary" id="generateBtn" type="button">Genera e salva PDF</button>
+  </div>
+  <div class="status-msg" id="statusMsg"></div>
+
+  <button class="history-toggle" id="historyToggle" type="button">
+    <span>Storico buoni salvati</span>
+    <span id="historyChevron">▾</span>
+  </button>
+  <div id="historyList"></div>
+
+</div>
+
+<script>
+(function(){
+  const SUPABASE_URL = 'https://xqbhujcnjvwbwzpwjujf.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_W2oBnmBorITMgGKEhPEq6g_lHzXiwwj';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const itemsBody = document.getElementById('itemsBody');
+  const canvas = document.getElementById('sigCanvas');
+  const ctx = canvas.getContext('2d');
+  const sigHint = document.getElementById('sigHint');
+  const statusMsg = document.getElementById('statusMsg');
+  const buonoNumInput = document.getElementById('buonoNumInput');
+  let currentBuonoId = null;
+  let editingId = null;
+  let hasSignature = false;
+  let drawing = false;
+
+  function loadRecordIntoForm(rec){
+    editingId = rec.numero_buono;
+    buonoNumInput.value = rec.numero_buono;
+    currentBuonoId = rec.numero_buono;
+    document.getElementById('dataConsegna').value = rec.data_consegna || '';
+    document.getElementById('dataRientro').value = rec.data_rientro_prevista || '';
+    document.getElementById('dataRiconsegna').value = rec.data_riconsegna || '';
+    document.getElementById('luogo').value = rec.luogo || '';
+    document.getElementById('luogoImpiego').value = rec.luogo_impiego || '';
+    document.getElementById('cliente').value = rec.cliente || '';
+    document.getElementById('ritiratoDa').value = rec.ritirato_da || '';
+    document.getElementById('consegnatoDa').value = rec.consegnato_da || '';
+    document.getElementById('note').value = rec.note || '';
+    document.getElementById('cantiereId').value = rec.cantiere_id || '';
+    document.getElementById('cantiereName').value = rec.cantiere_nome || '';
+    if(rec.cantiere_id){
+      const sel = document.getElementById('cantiereSelect');
+      const trySelect = () => {
+        if(sel.querySelector(`option[value="${rec.cantiere_id}"]`)) sel.value = rec.cantiere_id;
+        else setTimeout(trySelect, 300);
+      };
+      trySelect();
+    }
+    itemsBody.innerHTML = '';
+    const items = rec.items || [];
+    if (items.length === 0){ addRow(); addRow(); addRow(); }
+    else items.forEach(it => addRow(it.desc, it.qty));
+
+    if (rec.firma_base64){
+      const img = new Image();
+      img.onload = () => {
+        resizeCanvas();
+        const ratio = window.devicePixelRatio || 1;
+        ctx.drawImage(img, 0, 0, canvas.width/ratio, canvas.height/ratio);
+        hasSignature = true;
+        sigHint.style.display = 'none';
+      };
+      img.src = rec.firma_base64;
+    } else {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      hasSignature = false;
+      sigHint.style.display = 'block';
+    }
+
+    document.getElementById('generateBtn').textContent = 'Salva modifiche';
+    statusMsg.textContent = `Stai modificando il buono ${rec.numero_buono}.`;
+    statusMsg.className = 'status-msg';
+  }
+
+  // ---------- Signature pad ----------
+  function resizeCanvas(){
+    const ratio = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#152238';
+  }
+  window.addEventListener('resize', () => {
+    const data = hasSignature ? canvas.toDataURL() : null;
+    resizeCanvas();
+    if (data){
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0, canvas.width/(window.devicePixelRatio||1), canvas.height/(window.devicePixelRatio||1));
+      img.src = data;
+    }
+  });
+  resizeCanvas();
+
+  function getPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  }
+  function startDraw(e){
+    e.preventDefault();
+    drawing = true;
+    hasSignature = true;
+    sigHint.style.display = 'none';
+    const p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  }
+  function moveDraw(e){
+    if (!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+  function endDraw(){ drawing = false; }
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', moveDraw);
+  window.addEventListener('mouseup', endDraw);
+  canvas.addEventListener('touchstart', startDraw, {passive:false});
+  canvas.addEventListener('touchmove', moveDraw, {passive:false});
+  canvas.addEventListener('touchend', endDraw);
+
+  document.getElementById('clearSigBtn').addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasSignature = false;
+    sigHint.style.display = 'block';
+  });
+
+  // ---------- Item rows ----------
+  function addRow(desc, qty){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="col-desc"><input type="text" class="item-desc" placeholder="es. Cassa audio JBL 315" value="${desc||''}"></td>
+      <td class="col-qty"><input type="text" class="item-qty" placeholder="1" value="${qty||''}"></td>
+      <td class="col-rm"><button class="rm-btn" type="button" title="Rimuovi riga">&times;</button></td>
+    `;
+    tr.querySelector('.rm-btn').addEventListener('click', () => tr.remove());
+    itemsBody.appendChild(tr);
+  }
+  document.getElementById('addRowBtn').addEventListener('click', () => addRow());
+  addRow(); addRow(); addRow();
+
+  // ---------- Buono numbering ----------
+  async function nextBuonoNumber(){
+    try{
+      const year = new Date().getFullYear();
+      const { count, error } = await supabase
+        .from('buoni_consegna')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', `${year}-01-01`);
+      if (error) throw error;
+      const n = (count || 0) + 1;
+      return `BC-${year}-${String(n).padStart(3,'0')}`;
+    }catch(e){
+      console.error(e);
+      return `BC-${new Date().getFullYear()}-001`;
+    }
+  }
+  async function assignNewNumber(){
+    currentBuonoId = await nextBuonoNumber();
+    buonoNumInput.value = currentBuonoId;
+  }
+
+  // ---------- Reset / defaults ----------
+  function todayStr(){
+    const d = new Date();
+    return d.toISOString().slice(0,10);
+  }
+  function resetForm(){
+    document.getElementById('dataConsegna').value = todayStr();
+    document.getElementById('dataRientro').value = '';
+    document.getElementById('dataRiconsegna').value = '';
+    document.getElementById('luogo').value = '';
+    document.getElementById('luogoImpiego').value = '';
+    document.getElementById('cliente').value = '';
+    document.getElementById('ritiratoDa').value = '';
+    document.getElementById('consegnatoDa').value = '';
+    document.getElementById('note').value = '';
+    itemsBody.innerHTML = '';
+    addRow(); addRow(); addRow();
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    hasSignature = false;
+    sigHint.style.display = 'block';
+    statusMsg.textContent = '';
+    statusMsg.className = 'status-msg';
+    editingId = null;
+    document.getElementById('generateBtn').textContent = 'Genera e salva PDF';
+    assignNewNumber();
+  }
+  document.getElementById('resetBtn').addEventListener('click', resetForm);
+
+  // ---------- Collect data ----------
+  function collectItems(){
+    const rows = itemsBody.querySelectorAll('tr');
+    const items = [];
+    rows.forEach(r => {
+      const desc = r.querySelector('.item-desc').value.trim();
+      const qty = r.querySelector('.item-qty').value.trim();
+      if (desc) items.push({ desc, qty: qty || '1' });
+    });
+    return items;
+  }
+
+  function collectData(){
+    return {
+      id: buonoNumInput.value.trim() || currentBuonoId,
+      data: document.getElementById('dataConsegna').value,
+      dataRientro: document.getElementById('dataRientro').value,
+      dataRiconsegna: document.getElementById('dataRiconsegna').value,
+      luogo: document.getElementById('luogo').value.trim(),
+      luogoImpiego: document.getElementById('luogoImpiego').value.trim(),
+      cliente: document.getElementById('cliente').value.trim(),
+      ritiratoDa: document.getElementById('ritiratoDa').value.trim(),
+      consegnatoDa: document.getElementById('consegnatoDa').value.trim(),
+      note: document.getElementById('note').value.trim(),
+      items: collectItems(),
+      savedAt: new Date().toISOString()
+    };
+  }
+
+  // ---------- PDF generation ----------
+  function buildPdf(data, sigDataUrl){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const marginX = 18;
+    let y = 20;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(21, 34, 56);
+    doc.text('Ottantunocento S.n.c.', marginX, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(90, 98, 114);
+    y += 6;
+    doc.text('Via Vincenzo Gemito 81, 81100 Caserta — P.IVA 02187720616', marginX, y);
+    y += 4.5;
+    doc.text('ottantunocentogroup@gmail.com', marginX, y);
+
+    y += 10;
+    doc.setDrawColor(198, 154, 62);
+    doc.setLineWidth(0.6);
+    doc.line(marginX, y, 210 - marginX, y);
+
+    y += 9;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(21, 34, 56);
+    doc.text('Buono di Consegna Attrezzature', marginX, y);
+    doc.setFontSize(10);
+    doc.setTextColor(14, 107, 100);
+    doc.text(`N. ${data.id}`, 210 - marginX, y, { align: 'right' });
+
+    y += 10;
+    doc.setFontSize(10);
+    doc.setTextColor(28, 34, 48);
+    const fld = (label, value) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label + ':', marginX, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value || '—', marginX + 42, y);
+      y += 6.5;
+    };
+    fld('Data consegna', data.data || '—');
+    fld('Luogo / evento', data.luogo);
+    fld('Luogo di impiego', data.luogoImpiego);
+    fld('Cliente', data.cliente);
+    fld('Ritirato da', data.ritiratoDa);
+    fld('Consegnato da', data.consegnatoDa);
+    fld('Rientro previsto', data.dataRientro || '—');
+    fld('Riconsegna effettiva', data.dataRiconsegna || '—');
+
+    y += 4;
+    doc.setDrawColor(220, 214, 200);
+    doc.setLineWidth(0.3);
+    doc.line(marginX, y, 210 - marginX, y);
+    y += 8;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(14, 107, 100);
+    doc.text('Attrezzatura consegnata', marginX, y);
+    y += 7;
+
+    doc.setFontSize(9.5);
+    doc.setTextColor(90, 98, 114);
+    doc.text('Descrizione', marginX, y);
+    doc.text('Q.tà', 170, y);
+    y += 2;
+    doc.setDrawColor(220, 214, 200);
+    doc.line(marginX, y, 210 - marginX, y);
+    y += 5.5;
+
+    doc.setFontSize(10);
+    doc.setTextColor(28, 34, 48);
+    doc.setFont('helvetica', 'normal');
+    data.items.forEach(it => {
+      if (y > 260){ doc.addPage(); y = 20; }
+      const lines = doc.splitTextToSize(it.desc, 130);
+      doc.text(lines, marginX, y);
+      doc.text(String(it.qty), 170, y);
+      y += 5.5 * lines.length;
+    });
+
+    if (data.note){
+      y += 4;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(14, 107, 100);
+      doc.text('Note', marginX, y);
+      y += 5.5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.setTextColor(28, 34, 48);
+      const noteLines = doc.splitTextToSize(data.note, 174);
+      doc.text(noteLines, marginX, y);
+      y += 5 * noteLines.length;
+    }
+
+    if (y > 220){ doc.addPage(); y = 20; }
+    y += 12;
+    doc.setDrawColor(220, 214, 200);
+    doc.line(marginX, y, 210 - marginX, y);
+    y += 8;
+    doc.setFontSize(9);
+    doc.setTextColor(90, 98, 114);
+    doc.text('Firmando confermo di aver ricevuto l\'attrezzatura sopra elencata in buono stato.', marginX, y);
+    y += 5;
+
+    if (sigDataUrl){
+      doc.addImage(sigDataUrl, 'PNG', marginX, y, 60, 24);
+      y += 26;
+    } else {
+      y += 24;
+    }
+    doc.setDrawColor(28, 34, 48);
+    doc.setLineWidth(0.2);
+    doc.line(marginX, y, marginX + 60, y);
+    doc.setFontSize(8.5);
+    doc.text('Firma cliente', marginX, y + 4);
+
+    return doc;
+  }
+
+  // ---------- Save + generate ----------
+  document.getElementById('generateBtn').addEventListener('click', async () => {
+    statusMsg.textContent = '';
+    statusMsg.className = 'status-msg';
+
+    const data = collectData();
+    if (!data.id){
+      statusMsg.textContent = 'Inserisci un numero buono.';
+      statusMsg.className = 'status-msg err';
+      return;
+    }
+    if (!data.cliente){
+      statusMsg.textContent = 'Inserisci il nome del cliente prima di generare il buono.';
+      statusMsg.className = 'status-msg err';
+      return;
+    }
+    if (data.items.length === 0){
+      statusMsg.textContent = 'Aggiungi almeno un\'attrezzatura alla lista.';
+      statusMsg.className = 'status-msg err';
+      return;
+    }
+    if (!hasSignature){
+      statusMsg.textContent = 'Manca la firma del cliente.';
+      statusMsg.className = 'status-msg err';
+      return;
+    }
+
+    const sigDataUrl = canvas.toDataURL('image/png');
+
+    try{
+      const pdf = buildPdf(data, sigDataUrl);
+
+      // Sincronizza con Planning (crea cantiere se non esiste)
+      const cantiereIdSel = document.getElementById('cantiereId').value;
+      const cantierNomeSel = document.getElementById('cantiereName').value.trim();
+      let cantiereId = cantiereIdSel, cantiereName = cantierNomeSel;
+      if(cantiereIdSel || cantierNomeSel){
+        const sync = await sincronizzaConPlanning(data, cantiereIdSel, cantierNomeSel);
+        cantiereId = sync.cantiereId;
+        cantiereName = sync.cantiereName;
+      }
+
+      const row = {
+        numero_buono: data.id,
+        data_consegna: data.data || null,
+        data_rientro_prevista: data.dataRientro || null,
+        data_riconsegna: data.dataRiconsegna || null,
+        luogo: data.luogo,
+        luogo_impiego: data.luogoImpiego,
+        cliente: data.cliente,
+        ritirato_da: data.ritiratoDa,
+        consegnato_da: data.consegnatoDa,
+        note: data.note,
+        items: data.items,
+        firma_base64: sigDataUrl,
+        cantiere_id: cantiereId || null,
+        cantiere_nome: cantiereName || null
+      };
+
+      if (editingId){
+        const { error } = await supabase
+          .from('buoni_consegna')
+          .update(row)
+          .eq('numero_buono', editingId);
+        if (error) throw error;
+
+        pdf.save(`Buono_${data.id}_${data.cliente.replace(/\s+/g,'_')}.pdf`);
+        statusMsg.textContent = `Buono ${data.id} aggiornato.`;
+        statusMsg.className = 'status-msg ok';
+        editingId = null;
+        document.getElementById('generateBtn').textContent = 'Genera e salva PDF';
+        loadHistory();
+        return;
+      }
+
+      const { error } = await supabase.from('buoni_consegna').insert(row);
+
+      if (error){
+        if (error.code === '23505'){
+          statusMsg.textContent = `Il numero ${data.id} è già stato usato da un altro operatore. Genero un nuovo numero, riprova.`;
+          statusMsg.className = 'status-msg err';
+          await assignNewNumber();
+          return;
+        }
+        throw error;
+      }
+
+      pdf.save(`Buono_${data.id}_${data.cliente.replace(/\s+/g,'_')}.pdf`);
+      statusMsg.textContent = `Buono ${data.id} generato e salvato nello storico condiviso.`;
+      statusMsg.className = 'status-msg ok';
+      loadHistory();
+    }catch(err){
+      console.error(err);
+      statusMsg.textContent = 'Errore durante il salvataggio su Supabase. Riprova.';
+      statusMsg.className = 'status-msg err';
+    }
+  });
+
+  // ── INTEGRAZIONE PLANNING ──────────────────────────────────────────────
+
+  const PLANNING_ROW = 'unico'; // stessa riga Supabase usata dal Planning
+
+  async function caricaCantieriplanning(){
+    const sel = document.getElementById('cantiereSelect');
+    try{
+      const { data: rows } = await supabase
+        .from('gestionale_dati')
+        .select('dati')
+        .eq('id', PLANNING_ROW)
+        .single();
+      const cantieri = rows?.dati?.cantieri || [];
+      const attivi = cantieri.filter(c=>{
+        const s=(c.stato||'').toLowerCase();
+        return !s.includes('conclus')&&!s.includes('perso')&&!s.includes('archiv');
+      });
+      sel.innerHTML = '<option value="">— Nessun collegamento —</option>' +
+        attivi.map(c=>`<option value="${c.id}" data-nome="${c.nome}" data-comm="${c.committente||''}">${c.nome}${c.committente?' — '+c.committente:''}</option>`).join('');
+    } catch(e){
+      sel.innerHTML = '<option value="">— Impossibile caricare cantieri —</option>';
+    }
+  }
+
+  async function sincronizzaConPlanning(data, cantiereIdSel, cantierNomeSel){
+    // 1. Leggi la riga planning da Supabase
+    const { data: rows, error } = await supabase
+      .from('gestionale_dati')
+      .select('dati')
+      .eq('id', PLANNING_ROW)
+      .single();
+    if(error) throw error;
+
+    const datiPlanning = rows?.dati || {};
+    let cantieri = [...(datiPlanning.cantieri||[])];
+
+    let cantiereId = cantiereIdSel;
+    let cantiereName = cantierNomeSel || data.luogo || data.cliente;
+
+    if(cantiereId){
+      // Cantiere esistente — aggiorna il nome nel buono
+      const c = cantieri.find(x=>x.id===cantiereId);
+      if(c) cantiereName = c.nome;
+    } else if(cantiereName){
+      // Cerca per nome (case-insensitive)
+      const trovato = cantieri.find(c=>c.nome.toLowerCase()===cantiereName.toLowerCase());
+      if(trovato){
+        cantiereId = trovato.id;
+        cantiereName = trovato.nome;
+      } else {
+        // Crea nuovo cantiere nel Planning
+        cantiereId = 'cant_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+        const nuovoCantiere = {
+          id: cantiereId,
+          nome: cantiereName,
+          committente: data.cliente || '',
+          luogo: data.luogoImpiego || data.luogo || '',
+          stato: 'in corso',
+          tipo: 'standard',
+          periodoInizio: data.data || new Date().toISOString().slice(0,10),
+          periodoFine: data.dataRientro || data.data || new Date().toISOString().slice(0,10),
+          attrezzature: data.items.map(it=>({tipo:it.desc, quantita:parseInt(it.qty)||1})),
+          interventi: [], personale: [], servizi: [], materiali: [], mezzi: [],
+          _datosDaBuono: true
+        };
+        cantieri.push(nuovoCantiere);
+
+        // Salva cantieri aggiornati su Supabase (merge selettivo)
+        const merged = { ...datiPlanning, cantieri };
+        await supabase
+          .from('gestionale_dati')
+          .upsert({ id: PLANNING_ROW, dati: merged, aggiornato_il: new Date().toISOString() });
+
+        statusMsg.textContent += ' · Cantiere "' + cantiereName + '" creato nel Planning ✓';
+      }
+    }
+
+    return { cantiereId, cantiereName };
+  }
+
+  // Popola il form dai parametri URL (quando aperto dal Planning)
+  function leggiParamsUrl(){
+    const p = new URLSearchParams(window.location.search);
+    if(p.get('luogo'))         document.getElementById('luogo').value = p.get('luogo');
+    if(p.get('luogoImpiego'))  document.getElementById('luogoImpiego').value = p.get('luogoImpiego');
+    if(p.get('cliente'))       document.getElementById('cliente').value = p.get('cliente');
+    if(p.get('data'))          document.getElementById('dataConsegna').value = p.get('data');
+    if(p.get('rientro'))       document.getElementById('dataRientro').value = p.get('rientro');
+    if(p.get('cantiereId'))    document.getElementById('cantiereId').value = p.get('cantiereId');
+    if(p.get('cantiereName'))  document.getElementById('cantiereName').value = p.get('cantiereName');
+    if(p.get('items')){
+      try{
+        const items = JSON.parse(decodeURIComponent(p.get('items')));
+        itemsBody.innerHTML = '';
+        items.forEach(it=>addRow(it.desc, it.qty));
+      } catch(e){ /* ignora */ }
+    }
+    // Preseleziona il cantiere nel select dopo che è caricato
+    if(p.get('cantiereId')){
+      const id = p.get('cantiereId');
+      const trySelect = () => {
+        const sel = document.getElementById('cantiereSelect');
+        if(sel.querySelector(`option[value="${id}"]`)){
+          sel.value = id;
+        } else {
+          setTimeout(trySelect, 300);
+        }
+      };
+      setTimeout(trySelect, 500);
+    }
+  }
+
+  // Aggiorna cantiereName quando si seleziona dalla lista
+  document.getElementById('cantiereSelect').addEventListener('change', function(){
+    const opt = this.options[this.selectedIndex];
+    document.getElementById('cantiereId').value = this.value;
+    if(this.value){
+      document.getElementById('cantiereName').value = opt.dataset.nome || '';
+      if(opt.dataset.comm && !document.getElementById('cliente').value)
+        document.getElementById('cliente').value = opt.dataset.comm;
+    }
+  });
+
+  // ── AVVIO ──────────────────────────────────────────────────────────────
+  caricaCantieriplanning();
+  leggiParamsUrl();
+
+
+  const historyList = document.getElementById('historyList');
+  const historyToggle = document.getElementById('historyToggle');
+  const historyChevron = document.getElementById('historyChevron');
+  let historyOpen = false;
+
+  historyToggle.addEventListener('click', () => {
+    historyOpen = !historyOpen;
+    historyList.style.display = historyOpen ? 'block' : 'none';
+    historyChevron.textContent = historyOpen ? '▴' : '▾';
+    if (historyOpen) loadHistory();
+  });
+
+  async function loadHistory(){
+    historyList.innerHTML = '<div class="empty-hist">Carico storico…</div>';
+    try{
+      const { data: records, error } = await supabase
+        .from('buoni_consegna')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+
+      if (!records || records.length === 0){
+        historyList.innerHTML = '<div class="empty-hist">Nessun buono salvato ancora.</div>';
+        return;
+      }
+      historyList.innerHTML = '';
+      records.forEach(rec => {
+        const row = document.createElement('div');
+        row.className = 'hist-item';
+        row.innerHTML = `
+          <div class="hi-main">
+            <b>${rec.numero_buono} — ${rec.cliente || 'Senza nome'}</b>
+            <span>${rec.data_consegna || ''} · ${rec.luogo || ''}${rec.data_riconsegna ? ' · Riconsegnato ' + rec.data_riconsegna : ''}</span>
+          </div>
+          <div class="hi-actions">
+            <button class="hist-dl" type="button">Riscarica</button>
+            <button class="hist-edit" type="button">Modifica</button>
+            ${!rec.data_riconsegna ? '<button class="hist-return" type="button">Segna riconsegnato</button>' : ''}
+            <button class="hist-del" type="button">Elimina</button>
+          </div>
+        `;
+        row.querySelector('.hist-dl').addEventListener('click', () => {
+          try{
+            const mapped = {
+              id: rec.numero_buono,
+              data: rec.data_consegna,
+              dataRientro: rec.data_rientro_prevista,
+              dataRiconsegna: rec.data_riconsegna,
+              luogo: rec.luogo,
+              luogoImpiego: rec.luogo_impiego,
+              cliente: rec.cliente,
+              ritiratoDa: rec.ritirato_da,
+              consegnatoDa: rec.consegnato_da,
+              note: rec.note,
+              items: rec.items || []
+            };
+            const pdf = buildPdf(mapped, rec.firma_base64 || null);
+            pdf.save(`Buono_${rec.numero_buono}_${(rec.cliente||'cliente').replace(/\s+/g,'_')}.pdf`);
+          }catch(e){
+            console.error(e);
+          }
+        });
+
+        row.querySelector('.hist-edit').addEventListener('click', () => {
+          loadRecordIntoForm(rec);
+          historyList.style.display = 'none';
+          historyOpen = false;
+          historyChevron.textContent = '▾';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        const returnBtn = row.querySelector('.hist-return');
+        if (returnBtn){
+          returnBtn.addEventListener('click', async () => {
+            const today = todayStr();
+            try{
+              const { error } = await supabase
+                .from('buoni_consegna')
+                .update({ data_riconsegna: today })
+                .eq('numero_buono', rec.numero_buono);
+              if (error) throw error;
+              loadHistory();
+            }catch(e){
+              console.error(e);
+              alert('Errore durante l\'aggiornamento. Riprova.');
+            }
+          });
+        }
+
+        row.querySelector('.hist-del').addEventListener('click', async () => {
+          if (!confirm(`Eliminare definitivamente il buono ${rec.numero_buono}? L'operazione non è reversibile.`)) return;
+          try{
+            const { error } = await supabase
+              .from('buoni_consegna')
+              .delete()
+              .eq('numero_buono', rec.numero_buono);
+            if (error) throw error;
+            loadHistory();
+          }catch(e){
+            console.error(e);
+            alert('Errore durante l\'eliminazione. Riprova.');
+          }
+        });
+        historyList.appendChild(row);
+      });
+    }catch(e){
+      console.error(e);
+      historyList.innerHTML = '<div class="empty-hist">Impossibile caricare lo storico.</div>';
+    }
+  }
+
+  // ---------- Init ----------
+  resetForm();
+})();
+</script>
+</body>
+</html>
