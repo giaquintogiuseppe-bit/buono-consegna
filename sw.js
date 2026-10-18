@@ -1,4 +1,4 @@
-const CACHE_NAME = 'otto8100-buonoconsegna-v1';
+const CACHE_NAME = 'otto8100-buonoconsegna-v2';
 
 self.addEventListener('install', e => {
   e.waitUntil(

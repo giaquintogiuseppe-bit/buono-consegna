@@ -555,6 +555,8 @@
         <div>
           <label for="cliente">Cliente / ragione sociale</label>
           <input type="text" id="cliente" placeholder="Nome cliente o azienda">
+          <div id="bc-ref-info" style="display:none;font-size:12px;margin-top:5px;color:#0e7c66"></div>
+          <select id="bc-intest" onchange="bcPickIntestatario()" title="Scegli la società a cui intestare il buono" style="display:none;width:100%;margin-top:5px;padding:7px;border:1px solid #c6e2df;border-radius:6px;font-size:13px;background:#fff"></select>
         </div>
         <div>
           <label for="ritiratoDa">Ritirato da (persona)</label>
@@ -1160,6 +1162,7 @@
     // Collega al cantiere
     document.getElementById('cantiereId').value = c.id || '';
     document.getElementById('cantiereName').value = c.nome || '';
+    bcAggiornaIntestatario(c.clienteId||'');
 
     // Aggiorna il select cantiere se già caricato
     const sel = document.getElementById('cantiereSelect');
@@ -1186,6 +1189,43 @@
 
   const PLANNING_ROW = 'unico'; // stessa riga Supabase usata dal Planning
 
+  // ── REFERENTI / SOCIETÀ: intestazione automatica alla società corretta ──
+  // Il cliente del cantiere può far capo a un referente (Patrone, Carlucci…) con più
+  // società. Qui mostriamo il referente e, se ha più società, un menù per scegliere a
+  // quale intestare il buono.
+  let BC_CLI_BYID={}, BC_CLI_BYREF={}, BC_REFNOME={};
+  function _bcEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  async function bcCaricaAnagrafiche(){
+    try{
+      const { data: rows } = await supabase.from('gestionale_dati').select('dati').eq('id',PLANNING_ROW).single();
+      const cl = rows?.dati?.clienti || [];
+      BC_CLI_BYID={}; BC_CLI_BYREF={};
+      cl.forEach(c=>{ if(!c||!c.id) return;
+        BC_CLI_BYID[c.id]={nome:c.ragioneSociale, refId:c.referenteId||''};
+        if(c.referenteId){ (BC_CLI_BYREF[c.referenteId]=BC_CLI_BYREF[c.referenteId]||[]).push(c.ragioneSociale); }
+      });
+    }catch(e){}
+    try{
+      const { data: refs } = await supabase.from('referenti').select('id,nome');
+      BC_REFNOME={}; (refs||[]).forEach(r=>{ if(r&&r.id) BC_REFNOME[r.id]=r.nome; });
+    }catch(e){}
+  }
+  function bcAggiornaIntestatario(clienteId){
+    const info=document.getElementById('bc-ref-info'), sel=document.getElementById('bc-intest');
+    if(!info||!sel) return;
+    const cli = clienteId ? BC_CLI_BYID[clienteId] : null;
+    const refId = cli && cli.refId ? cli.refId : '';
+    if(!refId){ info.style.display='none'; sel.style.display='none'; sel.innerHTML=''; return; }
+    info.style.display='block'; info.innerHTML='👤 Fa capo a <b>'+_bcEsc(BC_REFNOME[refId]||'referente')+'</b>';
+    const soc = BC_CLI_BYREF[refId]||[];
+    if(soc.length>1){
+      const cur=document.getElementById('cliente').value;
+      sel.style.display='block';
+      sel.innerHTML='<option value="">— intesta il buono a… —</option>'+soc.map(n=>`<option value="${_bcEsc(n)}"${n===cur?' selected':''}>${_bcEsc(n)}</option>`).join('');
+    } else { sel.style.display='none'; sel.innerHTML=''; }
+  }
+  function bcPickIntestatario(){ const sel=document.getElementById('bc-intest'); if(sel&&sel.value) document.getElementById('cliente').value=sel.value; }
+
   async function caricaCantieriplanning(){
     const sel = document.getElementById('cantiereSelect');
     try{
@@ -1200,7 +1240,7 @@
         return !s.includes('conclus')&&!s.includes('perso')&&!s.includes('archiv');
       });
       sel.innerHTML = '<option value="">— Nessun collegamento —</option>' +
-        attivi.map(c=>`<option value="${c.id}" data-nome="${c.nome}" data-comm="${c.committente||''}">${c.nome}${c.committente?' — '+c.committente:''}</option>`).join('');
+        attivi.map(c=>`<option value="${c.id}" data-nome="${c.nome}" data-comm="${c.committente||''}" data-cli="${c.clienteId||''}">${c.nome}${c.committente?' — '+c.committente:''}</option>`).join('');
     } catch(e){
       sel.innerHTML = '<option value="">— Impossibile caricare cantieri —</option>';
     }
@@ -1302,11 +1342,13 @@
       document.getElementById('cantiereName').value = opt.dataset.nome || '';
       if(opt.dataset.comm && !document.getElementById('cliente').value)
         document.getElementById('cliente').value = opt.dataset.comm;
-    }
+      bcAggiornaIntestatario(opt.dataset.cli||'');
+    } else { bcAggiornaIntestatario(''); }
   });
 
   // ── AVVIO ──────────────────────────────────────────────────────────────
   caricaCantieriplanning();
+  bcCaricaAnagrafiche();
   leggiParamsUrl();
 
 
