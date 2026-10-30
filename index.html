@@ -660,6 +660,40 @@
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxYmh1amNuanZ3Ynd6cHdqdWpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MzM4ODUsImV4cCI6MjA5NzMwOTg4NX0.VstO3aII143jpPXjgKg0t3du-yc5rS9xs2hYko_2DRs';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+  // ── Salvataggio SICURO del blob (lock ottimistico su `versione`) ──────────────
+  // Rilegge i dati freschi, applica SOLO la mutazione richiesta, e fa un UPDATE
+  // condizionato alla versione letta: se nel frattempo un'altra app ha salvato,
+  // 0 righe aggiornate → rilegge e riprova. Evita il last-write-wins dell'upsert.
+  async function blobPatchSicuro(rowId, mutator, tentativi){
+    tentativi = tentativi || 5;
+    for(let i=0;i<tentativi;i++){
+      const { data: row, error } = await supabase
+        .from('gestionale_dati').select('dati,versione').eq('id', rowId).single();
+      if(error) throw error;
+      const base = (row && row.dati) ? row.dati : {};
+      const v = row ? row.versione : null;
+      const nuovo = mutator(JSON.parse(JSON.stringify(base)));
+      if(nuovo === false) return true;                 // niente da scrivere
+      let q = supabase.from('gestionale_dati')
+        .update({ dati: nuovo, aggiornato_il: new Date().toISOString() })
+        .eq('id', rowId);
+      q = (v === null || v === undefined) ? q.is('versione', null) : q.eq('versione', v);
+      const { data: upd, error: e2 } = await q.select('versione');
+      if(e2) throw e2;
+      if(upd && upd.length) return true;               // scritto: la versione combaciava
+      await new Promise(r=>setTimeout(r, 150*(i+1)));  // conflitto: qualcuno ha salvato → riprova
+    }
+    throw new Error('Salvataggio in conflitto ripetuto: i dati sono cambiati altrove. Riprova.');
+  }
+  async function blobAggiungiCantiere(rowId, nuovoCantiere){
+    return blobPatchSicuro(rowId, (d)=>{
+      const cs = Array.isArray(d.cantieri) ? d.cantieri : [];
+      cs.push(nuovoCantiere);
+      d.cantieri = cs;
+      return d;
+    });
+  }
+
   const itemsBody = document.getElementById('itemsBody');
   const canvas = document.getElementById('sigCanvas');
   const ctx = canvas.getContext('2d');
@@ -1289,11 +1323,9 @@
         };
         cantieri.push(nuovoCantiere);
 
-        // Salva cantieri aggiornati su Supabase (merge selettivo)
-        const merged = { ...datiPlanning, cantieri };
-        await supabase
-          .from('gestionale_dati')
-          .upsert({ id: PLANNING_ROW, dati: merged, aggiornato_il: new Date().toISOString() });
+        // Salva in modo SICURO: rilegge fresco, aggiunge SOLO il nuovo cantiere,
+        // UPDATE condizionato alla versione (niente più upsert dell'intero blob).
+        await blobAggiungiCantiere(PLANNING_ROW, nuovoCantiere);
 
         statusMsg.textContent += ' · Cantiere "' + cantiereName + '" creato nel Planning ✓';
       }
